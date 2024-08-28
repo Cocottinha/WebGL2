@@ -98,8 +98,6 @@ image.onload = () => {
 
     var matrix = m4.translation(panX, panY);
 
-    console.log(panX, panY)
-
     matrix = m4.multiply(matrix, m4.scale(scale, scale, 1));
 
     gl.uniformMatrix4fv(matrixLocation, false, matrix);
@@ -112,38 +110,51 @@ image.onload = () => {
   let isDragging = false;
   let startX, startY;
 
-  canvas.addEventListener('mousedown', (e) => {
+  function handleStart(x, y) {
     isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-  });
+    startX = x;
+    startY = y;
+  }
 
-  canvas.addEventListener('mousemove', (e) => {
+  function handleMove(x, y) {
     if (isDragging) {
-      panX += (e.clientX - startX) / canvas.width;
-      panY -= (e.clientY - startY) / canvas.height;
-      startX = e.clientX;
-      startY = e.clientY;
+      panX += (x - startX) / canvas.width;
+      panY -= (y - startY) / canvas.height;
+      startX = x;
+      startY = y;
       draw();
     }
-  });
-
-  canvas.addEventListener('mouseup', () => {
+  }
+  function handleEnd() {
     isDragging = false;
-  });
+  }
+  canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+      canvas.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+      canvas.addEventListener('mouseup', handleEnd);
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        handleStart(touch.clientX, touch.clientY);
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        handleMove(touch.clientX, touch.clientY);
+      });
+      canvas.addEventListener('touchend', handleEnd);
 
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const zoomAmount = 0.1;
-    if (e.deltaY < 0) {
-      scale += zoomAmount;
-    } else {
-      scale -= zoomAmount;
-    }
-    scale = Math.max(scale, 0.1);
-    draw();
-  });
-};
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomAmount = 0.1;
+        if (e.deltaY < 0) {
+          scale += zoomAmount;
+        } else {
+          scale -= zoomAmount;
+        }
+        scale = Math.max(scale, 0.1);
+        draw();
+      });
+    };
 const m4 = {
   translation: function (tx, ty) {
     return [
