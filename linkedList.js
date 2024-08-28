@@ -109,6 +109,7 @@ image.onload = () => {
 
   let isDragging = false;
   let startX, startY;
+  let initialDistance = null;
 
   function handleStart(x, y) {
     isDragging = true;
@@ -125,36 +126,75 @@ image.onload = () => {
       draw();
     }
   }
+
   function handleEnd() {
     isDragging = false;
   }
-  canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
-      canvas.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
-      canvas.addEventListener('mouseup', handleEnd);
-      canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        handleStart(touch.clientX, touch.clientY);
-      });
-      canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        handleMove(touch.clientX, touch.clientY);
-      });
-      canvas.addEventListener('touchend', handleEnd);
 
-      canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        const zoomAmount = 0.1;
-        if (e.deltaY < 0) {
-          scale += zoomAmount;
-        } else {
-          scale -= zoomAmount;
-        }
+  function handleTouchStart(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      handleStart(touch.clientX, touch.clientY);
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      initialDistance = Math.sqrt(dx * dx + dy * dy);
+    }
+  }
+
+  function handleTouchMove(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      const currentDistance = Math.sqrt(dx * dx + dy * dy);
+
+      if (initialDistance) {
+        const zoomAmount = (currentDistance - initialDistance) * 0.01;
+        scale += zoomAmount;
         scale = Math.max(scale, 0.1);
         draw();
-      });
-    };
+      }
+
+      initialDistance = currentDistance;
+    }
+  }
+
+  function handleTouchEnd(e) {
+    e.preventDefault();
+    if (e.touches.length < 2) {
+      initialDistance = null;
+    }
+  }
+
+  canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+  
+  canvas.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+  
+  canvas.addEventListener('mouseup', handleEnd);
+  
+  canvas.addEventListener('touchstart', handleTouchStart);
+  
+  canvas.addEventListener('touchmove', handleTouchMove);
+  
+  canvas.addEventListener('touchend', handleTouchEnd);
+  
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomAmount = 0.1;
+    if (e.deltaY < 0) {
+      scale += zoomAmount;
+    } else {
+      scale -= zoomAmount;
+    }
+    scale = Math.max(scale, 0.1);
+    draw();
+  });
+};
 const m4 = {
   translation: function (tx, ty) {
     return [
@@ -165,7 +205,7 @@ const m4 = {
     ];
   },
 
-  scale: function(sx, sy, sz) {
+  scale: function (sx, sy, sz) {
     return [
       sx, 0, 0, 0,
       0, sy, 0, 0,
