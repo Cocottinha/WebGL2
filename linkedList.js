@@ -117,14 +117,14 @@ image.onload = () => {
     startY = y;
   }
 
-  function handleMove(x, y) {
+  function handleMove(x, y) {   
     if (isDragging) {
       panX += (x - startX) / canvas.width;
       panY -= (y - startY) / canvas.height;
       startX = x;
-      startY = y;
-      draw();
+      startY = y;  
     }
+    draw();
   }
 
   function handleEnd() {
